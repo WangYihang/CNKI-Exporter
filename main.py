@@ -170,13 +170,15 @@ def export(docid, doctype):
 def convert(data):
     from jinja2 import Template
     template = Template(open("example.bib.template").read())
-    return template.render(
-        abstract=data["summary"].replace("<br>", ""),
-        author=data["text_author"],
-        keywords=",".join(data["keywords"]),
-        title=data["title"],
-        year=data["publish_year"],
-    )
+    data = {
+        "abstract": data["summary"].replace("<br>", ""),
+        "author": data["text_author"],
+        "keywords": ",".join(data["keywords"]),
+        "title": data["title"],
+        "year": data["publish_year"],
+        "file": data["file"],
+    }
+    return template.render(data=data)
 
 class Choice:
     def __init__(self, title, authors, doctype, docid):

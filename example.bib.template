@@ -1,12 +1,4 @@
 @article{
-    abstract = {{ '{' }}{{ abstract }}{{ '}' }},
-    author = {{ '{' }}{{ author }}{{ '}' }},
-    doi = {{ '{' }}{{ doi }}{{ '}' }},
-    file = {{ '{' }}{{ file }}{{ '}' }},
-    isbn = {{ '{' }}{{ isbn }}{{ '}' }},
-    journal = {{ '{' }}{{ journal }}{{ '}' }},
-    keywords = {{ '{' }}{{ keywords }}{{ '}' }},
-    pages = {{ '{' }}{{ pages }}{{ '}' }},
-    title = {{ '{' }}{{ title }}{{ '}' }},
-    year = {{ '{' }}{{ year }}{{ '}' }},
-}
+{%- for key, value in data.items() -%}
+    {{ key }} = {{ '{' }}{{ value }}{{ '}' }},
+{% endfor %}}
