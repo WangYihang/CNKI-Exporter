@@ -1,0 +1,4 @@
+requests
+Jinja2
+whaaaaat
+prompt_toolkit==1.0.14
