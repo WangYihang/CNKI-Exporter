@@ -226,6 +226,12 @@ def main():
     import glob
     filenames = glob.glob("{}\\paper\\*.pdf".format(os.getcwd()))
     for filename in filenames:
+        ext = os.path.splitext(filename)[1][1:]
+        exists_bib_filename = "{}.bib".format(filename)
+        folder = os.path.abspath(os.path.dirname(filename))
+        if os.path.exists(exists_bib_filename):
+            print("bib file exists, skipping {}".format(exists_bib_filename))
+            continue
         keyword = os.path.splitext(os.path.basename(filename))[0]
         print("Searching: {}".format(keyword))
         search_result = search(keyword)
@@ -234,15 +240,21 @@ def main():
             continue
         selections = select(search_result)
         for choice in selections:
+            result_bib_filename = "{}{}{}.{}.bib".format(
+                folder,
+                os.path.sep,
+                choice.title,
+                ext,
+            )
             title = choice.title
             authors = ",".join(choice.authors)
             docid = choice.docid
             doctype = choice.doctype
             data = export(docid, doctype)[0]
-            data["file"] = ":{}$\\backslash$:{}:{}".format(filename[0], filename[2:].replace(os.path.sep, "/"), os.path.splitext(filename)[1][1:])
+            data["file"] = ":{}$\\backslash$:{}:{}".format(filename[0], filename[2:].replace(os.path.sep, "/"), ext)
             bib = convert(data)
             print(bib)
-            with open("{}.bib".format(title), "w", encoding="utf-8") as f:
+            with open(result_bib_filename, "w", encoding="utf-8") as f:
                 f.write(bib)
 
 if __name__ == "__main__":
