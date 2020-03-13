@@ -1,4 +1,4 @@
-@article{
+@article{ {{ citation_key }},
 {% for key, value in data.items() -%}
     {{ key }} = {{ '{' }}{{ value }}{{ '}' }},
 {% endfor %}}
