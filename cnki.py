@@ -21,20 +21,40 @@ def random_string(legnth=0x10, charset=string.ascii_letters):
     return "".join([random.choice(charset) for _ in range(legnth)])
 
 def search(keyword):
-    url = 'https://kns.cnki.net/kns/brief/brief.aspx'
-    params = {
-        "pagename": "ASP.brief_default_result_aspx", 
-        "isinEn": "1", 
-        "dbPrefix": "SCDB", 
-        "dbCatalog": "中国学术文献网络出版总库", 
-        "ConfigFile": "SCDBINDEX.xml", 
-        "research": "off", 
-        "t": "{}".format(int(time.time())), 
-        "keyValue": keyword, 
-        "S": "1", 
-        "sorttype": "", 
+    search_handler_url = "http://kns.cnki.net/kns/request/SearchHandler.ashx"
+    search_handler_data = {
+        "action": "",
+        "ua": "1.11",
+        "isinEn": "1",
+        "PageName": "ASP.brief_default_result_aspx",
+        "DbPrefix": "SCDB",
+        "DbCatalog": "中国学术文献网络出版总库",
+        "ConfigFile": "SCDBINDEX.xml",
+        "db_opt": "CJFQ,CDFD,CMFD,CPFD,IPFD,CCND,CCJD",
+        "txt_1_sel": "SU$%=|",
+        "txt_1_value1": keyword,
+        "txt_1_special1": "%",
+        "his": "0",
+        "parentdb": "SCDB",
+        '__': time.asctime(time.localtime()) + ' GMT+0800 (中国标准时间)',
     }
-    response = session.get(url, params=params)
+    response = session.post(search_handler_url, data=search_handler_data)
+    # 这个 brief 里面的 keuValue 没用，必须得先触发一次搜索，把关键字存在服务器里。
+    get_result_url = 'http://kns.cnki.net/kns/brief/brief.aspx?pagename={}'.format(str(response.content, encoding="utf-8"))
+    params = {
+        # "pagename": "ASP.brief_default_result_aspx",
+        # "isinEn": "1",
+        # "dbPrefix": "SCDB",
+        # "dbCatalog": "中国学术文献网络出版总库",
+        # "ConfigFile": "SCDBINDEX.xml",
+        # "research": "off",
+        "t": "{}".format(int(time.time())),
+        "keyValue": keyword,
+        # "S": "1",
+        # "sorttype": "",
+    }
+    response = session.get(get_result_url, params=params)
+    # response = session.get(get_result_url)
     soup = bs4.BeautifulSoup(response.content,"html.parser")
     trs = soup.find_all("tr")
     result = []
@@ -44,7 +64,8 @@ def search(keyword):
             continue
         title = link.text
         authors = [i.text for i in tr.find_all("a", class_="KnowledgeNetLink") if i.has_attr('href')]
-        journal = [i for i in tr.find_all("a", target="_blank") if not i.has_attr('class')][-1].text
+        # journal = [i for i in tr.find_all("a", target="_blank") if not i.has_attr('class')][-1].text
+        journal = tr.find_all("td")[3].text.strip()
         href = link['href']
         result.append({
             "title": title, 
@@ -162,27 +183,37 @@ def convert(data):
         "Database Provider": "CNKI"
     }
     '''
+    print(data)
     from jinja2 import Template
     template = Template(open("example.bib.template").read())
-    data = {
+    params = {
         "file": data["file"],
         "title": data["Title"],
         "author": ",".join(data["Author"].split(";")),
-        "journal": data["Journal"],
         "year": data["Year"],
-        "issue": data["Issue"],
-        "pages": data["Pages"],
         "keywords": ",".join(data["Keywords"].split(";")),
         "abstract": data["Abstract"],
-        "isbn": data["ISBN/ISSN"],
     }
-    return template.render(data=data, citation_key=random_string())
+    if "Pages" in data.keys():
+        params["pages"] = data["Pages"],
+    if data["Reference Type"] == "ConferenceProceedings":
+        params["journal"] = data["Tertiary Title"]
+    elif data["Reference Type"] == "Journal Article":
+        params["journal"] = data["Journal"]
+        params["issue"] = data["Issue"]
+        params["isbn"] = data["ISBN/ISSN"]
+    elif data["Reference Type"] == "Thesis":
+        params["journal"] = data["Publisher"]
+    else:
+        params["journal"] = "未知期刊"
+
+    return template.render(data=params, citation_key=random_string())
     pass
 
 def main():
     import glob
     filenames = glob.glob("{}\\paper\\*.pdf".format(os.getcwd()))
-    for filename in filenames:
+    for filename in filenames[0:1]:
         ext = os.path.splitext(filename)[1][1:]
         exists_bib_filename = "{}.bib".format(filename)
         folder = os.path.abspath(os.path.dirname(filename))
@@ -213,8 +244,6 @@ def main():
             print(bib)
             with open(result_bib_filename, "w", encoding="utf-8") as f:
                 f.write(bib)
-            break
-        break
 
 if __name__ == "__main__":
     main()
