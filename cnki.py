@@ -31,8 +31,23 @@ def search(keyword):
     }
     response = session.get(url, params=params)
     soup = bs4.BeautifulSoup(response.content,"html.parser")
-    divs = soup.find_all("a", class_="fz14")
-    print(len(divs))
+    trs = soup.find_all("tr")
+    result = []
+    for tr in trs:
+        link = tr.find("a", class_="fz14")
+        if not link:
+            continue
+        title = link.text
+        authors = [i.text for i in tr.find_all("a", class_="KnowledgeNetLink") if i.has_attr('href')]
+        journal = [i for i in tr.find_all("a", target="_blank") if not i.has_attr('class')][-1].text
+        href = link['href']
+        result.append({
+            "title": title, 
+            "authors": authors,
+            "journal": journal,
+            "href": href,
+        })
+    return result
 
 def select():
     pass
