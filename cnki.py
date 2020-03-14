@@ -79,7 +79,7 @@ def search(keyword):
 
 class Choice:
     def __init__(self, title, authors, journal, filename, dbname):
-        self.title = title
+        self.title = title.replace("\n", "").replace("\r", "")
         self.authors = authors
         self.journal = journal
         self.filename = filename
@@ -123,7 +123,6 @@ def select(choices):
     return result
 
 def export(filename, dbname):
-    print("{}!{}!1!0".format(filename, dbname))
     url = "https://kns.cnki.net/kns/ViewPage/viewsave.aspx?displayMode=NoteExpress"
     data = {
         "hid_kLogin_headerUrl": "%2FKLogin%2FRequest%2FGetKHeader.ashx%253Fcallback%253D%253F",
@@ -166,36 +165,18 @@ def export(filename, dbname):
     return data
 
 def convert(data):
-    '''
-    {
-        "Reference Type": "Journal Article",
-        "Title": "基于遗传算法和Fuzzing技术的Web应用漏洞挖掘研究",
-        "Author": "闫飞;",
-        "Author Address": "西安翻译学院;",
-        "Journal": "信息通信",
-        "Year": "2018",
-        "Issue": "09",
-        "Pages": "61-62",
-        "Keywords": "遗传算法;Fuzzing技术;Web应用;漏洞挖掘",
-        "Abstract": "在网络快速发展普及的形势下,以B/S架构为基础的Web应用系统备受青睐,开始实现广泛应用,而网络用户的大部分个人隐私息,是通过Web应用,加以传输并处理,从而导致Web应用演变成了网络攻击的重灾区域。所以,构建健全的、有效的Web应用漏洞挖掘机制,以便于可以及时发现其中存在的安全性问题,在一定程度上避免被恶意攻击。据此,文章主要对基于遗传算法和Fuzzing技术的Web应用漏洞挖掘进行了深入探究。",
-        "ISBN/ISSN": "1673-1131",
-        "Notes": "42-1739/TN",
-        "Database Provider": "CNKI"
-    }
-    '''
-    print(data)
     from jinja2 import Template
     template = Template(open("example.bib.template").read())
     params = {
         "file": data["file"],
         "title": data["Title"],
-        "author": ",".join(data["Author"].split(";")),
+        "author": ",".join([i.strip() for i in data["Author"].split(";") if i != ""]),
         "year": data["Year"],
         "keywords": ",".join(data["Keywords"].split(";")),
         "abstract": data["Abstract"],
     }
     if "Pages" in data.keys():
-        params["pages"] = data["Pages"],
+        params["pages"] = "{}".format(data["Pages"])
     if data["Reference Type"] == "ConferenceProceedings":
         params["journal"] = data["Tertiary Title"]
     elif data["Reference Type"] == "Journal Article":
@@ -213,7 +194,7 @@ def convert(data):
 def main():
     import glob
     filenames = glob.glob("{}\\paper\\*.pdf".format(os.getcwd()))
-    for filename in filenames[0:1]:
+    for filename in filenames:
         ext = os.path.splitext(filename)[1][1:]
         exists_bib_filename = "{}.bib".format(filename)
         folder = os.path.abspath(os.path.dirname(filename))
@@ -227,9 +208,7 @@ def main():
             print("0 matched.")
             continue
         selections = select(search_result)
-        print(selections)
         for choice in selections:
-            print(str(choice))
             data = export(choice.filename, choice.dbname)
             result_bib_filename = "{}{}{}.{}.bib".format(
                 folder,
@@ -237,13 +216,11 @@ def main():
                 choice.title,
                 ext,
             )
-            title = choice.title
-            authors = ",".join(choice.authors)
             data["file"] = ":{}$\\backslash$:{}:{}".format(filename[0], filename[2:].replace(os.path.sep, "/"), ext)
             bib = convert(data)
-            print(bib)
             with open(result_bib_filename, "w", encoding="utf-8") as f:
                 f.write(bib)
+            print("bibtex file saved into {}".format(result_bib_filename))
 
 if __name__ == "__main__":
     main()
