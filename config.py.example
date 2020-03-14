@@ -1,0 +1,8 @@
+class Spider:
+    headers = {}
+
+class CNKI(Spider):
+    cookies = {
+        'ASP.NET_SessionId':'',
+        'SID_kns': '',
+    }
