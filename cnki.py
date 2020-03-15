@@ -189,12 +189,13 @@ def convert(data):
         params["journal"] = "未知期刊"
 
     return template.render(data=params, citation_key=random_string())
-    pass
 
 def main():
     import glob
     filenames = glob.glob("{}\\paper\\*.pdf".format(os.getcwd()))
     for filename in filenames:
+        # Parse CNKI style filename of downloaded pdf files
+        print("Processing: {}".format(filename))
         ext = os.path.splitext(filename)[1][1:]
         exists_bib_filename = "{}.bib".format(filename)
         folder = os.path.abspath(os.path.dirname(filename))
@@ -202,7 +203,12 @@ def main():
             print("bib file exists, skipping {}".format(exists_bib_filename))
             continue
         keyword = os.path.splitext(os.path.basename(filename))[0]
-        print("Searching: {}".format(keyword))
+        if "_" in keyword:
+            keyword = keyword.split("_")[0]
+            author = keyword.split("_")[1]
+            print("Using keyword: {} for author: {}".format(keyword, author))
+        else:
+            print("Searching: {}".format(keyword))
         search_result = search(keyword)
         if len(search_result) == 0:
             print("0 matched.")
