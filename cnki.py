@@ -202,12 +202,13 @@ def main():
         if os.path.exists(exists_bib_filename):
             print("bib file exists, skipping {}".format(exists_bib_filename))
             continue
-        keyword = os.path.splitext(os.path.basename(filename))[0]
-        if "_" in keyword:
-            keyword = keyword.split("_")[0]
-            author = keyword.split("_")[1]
+        kw = os.path.splitext(os.path.basename(filename))[0]
+        if "_" in kw:
+            keyword = kw.split("_")[0]
+            author = kw.split("_")[1]
             print("Using keyword: {} for author: {}".format(keyword, author))
         else:
+            keyword = kw
             print("Searching: {}".format(keyword))
         search_result = search(keyword)
         if len(search_result) == 0:
